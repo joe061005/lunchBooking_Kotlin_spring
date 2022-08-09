@@ -10,8 +10,15 @@ data class User(
     var id: Int = -1,
 
     @Column
-    var name: String,
+    var username: String,
 
     @Column
-    var price: Float
+    var password: String,
+
+    @Column
+    var email: String,
+
+    @Column
+    var verify: Boolean
+
 )
