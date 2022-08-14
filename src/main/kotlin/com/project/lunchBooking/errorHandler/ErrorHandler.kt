@@ -11,4 +11,11 @@ class ErrorHandler {
     fun handleIllegalState(ex: IllegalStateException): ResponseEntity<ErrorResponse>{
         return ResponseEntity.badRequest().body(ErrorResponse(message = ex.localizedMessage))
     }
+
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgument(ex: IllegalArgumentException): ResponseEntity<ErrorResponse>{
+        return ResponseEntity.badRequest().body(ErrorResponse(message = ex.localizedMessage))
+    }
+
+
 }

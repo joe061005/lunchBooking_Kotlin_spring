@@ -4,11 +4,28 @@ import com.project.lunchBooking.model.User
 import com.project.lunchBooking.repo.UserRepository
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.jdbc.core.*
 
 @Service
-class UserService(private val repository: UserRepository) {
+class UserService(
+    private val repository: UserRepository,
+    @Autowired private val jdbc : JdbcTemplate = JdbcTemplate()
+) {
 
     fun saveUser(user: User): User{
+        if(user.id != -1 || user.verify != false){
+            throw IllegalArgumentException("Id must be -1 and verify must be false")
+        }
+
+        val queryString = "SELECT * FROM user WHERE username = ? OR email = ?"
+
+        val duplicatedUsers: List<User> = jdbc.query(queryString, BeanPropertyRowMapper(User::class.java), user.username, user.email)
+
+        if(duplicatedUsers.isNotEmpty()){
+            throw IllegalArgumentException("username or email exists")
+        }
+
         return repository.save(user)
     }
 

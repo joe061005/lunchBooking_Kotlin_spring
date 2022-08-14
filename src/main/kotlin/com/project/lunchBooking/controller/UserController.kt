@@ -2,16 +2,17 @@ package com.project.lunchBooking.controller
 
 import com.project.lunchBooking.model.User
 import com.project.lunchBooking.service.UserService
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
-
 @RestController
-@RequestMapping("api")
+@RequestMapping("api/v1/")
 class UserController(private val userService: UserService) {
 
     @PostMapping("/addUser")
-    fun addUser(@RequestBody user: User): User{
-        return userService.saveUser(user)
+    fun addUser(@RequestBody user: User): ResponseEntity<User>{
+        return ResponseEntity(userService.saveUser(user), HttpStatus.CREATED)
     }
 
     @PostMapping("/addUsers")
