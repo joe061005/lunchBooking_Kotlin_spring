@@ -1,18 +1,33 @@
 package com.project.lunchBooking.controller
 
+import com.project.lunchBooking.errorHandler.ErrorResponse
 import com.project.lunchBooking.model.User
 import com.project.lunchBooking.service.UserService
+import io.jsonwebtoken.Jwts
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.client.HttpClientErrorException
 
 @RestController
-@RequestMapping("api/v1/")
+@RequestMapping("api/v1")
 class UserController(private val userService: UserService) {
 
     @PostMapping("/addUser")
     fun addUser(@RequestBody user: User): ResponseEntity<User>{
         return ResponseEntity(userService.saveUser(user), HttpStatus.CREATED)
+    }
+
+    @GetMapping("/user")
+    fun user(@CookieValue("jwt") jwt: String?): ResponseEntity<ErrorResponse>{
+        if(jwt == null){
+            return ResponseEntity(ErrorResponse(message = "unauthorized"), HttpStatus.OK)
+        }
+
+        val id = Jwts.parser().setSigningKey("userLogin").parseClaimsJws(jwt).body.toString()
+
+        return ResponseEntity(ErrorResponse(message = "id"), HttpStatus.OK)
     }
 
     @PostMapping("/addUsers")
@@ -31,7 +46,7 @@ class UserController(private val userService: UserService) {
     }
 
     @GetMapping("/user/{username}")
-    fun findUserByName(@PathVariable username: String): User{
+    fun findUserByName(@PathVariable username: String): User?{
         return userService.getUserByUsername(username)
     }
 

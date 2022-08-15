@@ -1,16 +1,29 @@
 package com.project.lunchBooking.service
 
+import com.project.lunchBooking.errorHandler.SuccessResponse
 import com.project.lunchBooking.model.User
 import com.project.lunchBooking.repo.UserRepository
+import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.SignatureAlgorithm
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.jdbc.core.*
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.web.bind.annotation.CookieValue
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.client.HttpClientErrorException
+import java.util.*
+import javax.servlet.http.*
 
 @Service
 class UserService(
     private val repository: UserRepository,
-    @Autowired private val jdbc : JdbcTemplate = JdbcTemplate()
+    @Autowired private val jdbc : JdbcTemplate = JdbcTemplate(),
+    private val passwordEncoder: BCryptPasswordEncoder = BCryptPasswordEncoder()
 ) {
 
     fun saveUser(user: User): User{
@@ -25,6 +38,8 @@ class UserService(
         if(duplicatedUsers.isNotEmpty()){
             throw IllegalArgumentException("username or email exists")
         }
+
+        user.password = passwordEncoder.encode(user.password)
 
         return repository.save(user)
     }
@@ -41,7 +56,7 @@ class UserService(
         return repository.findByIdOrNull(id)
     }
 
-    fun getUserByUsername(username: String): User{
+    fun getUserByUsername(username: String): User?{
         return repository.findByUsername(username)
     }
 
@@ -61,4 +76,31 @@ class UserService(
         }
         return null
     }
+
+    fun Login(user: User, response: HttpServletResponse): ResponseEntity<SuccessResponse> {
+
+        val existingUser: User = repository.findByUsername(user.username)
+            ?: throw IllegalArgumentException("Invalid username or email")
+
+        if(!passwordEncoder.matches(user.password, existingUser.password)){
+            throw IllegalArgumentException("Invalid username or email")
+        }
+
+        val jwt = Jwts.builder()
+            .setIssuer(existingUser.id.toString())
+            .setExpiration(Date(System.currentTimeMillis() + 1000 * 60 * 60))
+            .signWith(SignatureAlgorithm.ES512, "userLogin").compact()
+
+        val cookie = Cookie("jwt", jwt)
+
+        // front-end cannot read it
+        cookie.isHttpOnly = true
+
+        response.addCookie(cookie)
+
+        return ResponseEntity.ok(SuccessResponse(message = "You have successfully logged in to the system."))
+
+    }
+
+
 }
