@@ -30,16 +30,16 @@ class UserService(
 ) {
 
     fun saveRole(role: Role): Role{
-        if(role.id != -1){
-            throw IllegalArgumentException("Id must be -1")
+        if(role.id != -1 || user.verify != false){
+            throw IllegalArgumentException("Id must be -1 and verify must be false")
         }
 
-        val queryString = "SELECT * FROM role WHERE name = ?"
+        val queryString = "SELECT * FROM user WHERE username = ? OR email = ?"
 
-        val duplicatedRoles: List<Role> = jdbc.query(queryString, BeanPropertyRowMapper(Role::class.java), role.name)
+        val duplicatedUsers: List<User> = jdbc.query(queryString, BeanPropertyRowMapper(User::class.java), user.username, user.email)
 
-        if(duplicatedRoles.isNotEmpty()){
-            throw IllegalArgumentException("role exists")
+        if(duplicatedUsers.isNotEmpty()){
+            throw IllegalArgumentException("username or email exists")
         }
 
         return roleRepository.save(role)

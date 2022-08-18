@@ -4,6 +4,13 @@ spring:
     username: ${MySQL_USERNAME}
     password: ${MySQL_PASSWORD}
 
+#  session:
+#    store-type: jdbc
+#    timeout: 30m
+#    jdbc:
+#      initialize-schema: always
+#      table-name: SPRING_SESSION
+
   jpa:
     show-sql: true
     hibernate:
@@ -12,15 +19,5 @@ spring:
       hibernate.format_sql: true
 jwt:
   secret: ${SECRET_KEY}
-
-
-
-
-#  session:
-#    store-type: jdbc
-#    timeout: 30m
-#    jdbc:
-#      initialize-schema: always
-#      table-name: SPRING_SESSION
 
 

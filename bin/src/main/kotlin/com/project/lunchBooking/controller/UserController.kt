@@ -1,10 +1,7 @@
 package com.project.lunchBooking.controller
 
-
 import com.project.lunchBooking.errorHandler.ErrorResponse
-import com.project.lunchBooking.errorHandler.SuccessResponse
 import com.project.lunchBooking.model.Role
-import com.project.lunchBooking.model.RoleToUserForm
 import com.project.lunchBooking.model.User
 import com.project.lunchBooking.service.UserService
 import io.jsonwebtoken.Jwts
@@ -49,32 +46,24 @@ class UserController(private val userService: UserService) {
         return userService.getUserById(id)
     }
 
-    @GetMapping("/userByName/{username}")
+    @GetMapping("/user/{username}")
     fun findUserByName(@PathVariable username: String): User?{
         return userService.getUserByUsername(username)
     }
 
-    @PutMapping("/update")
+    @PutMapping("/user/update")
     fun updateUser(@RequestBody user: User): User?{
         return userService.updateUser(user)
     }
 
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/user/{id}")
     fun deleteUser(@PathVariable id: Int): String{
         return userService.deleteUser(id)
     }
     
-    @PostMapping("/role/save")
+    @PostMapping
     fun saveRole(@RequestBody role: Role): ResponseEntity<Role>{
-        return ResponseEntity(userService.saveRole(role), HttpStatus.CREATED)
-
-    }
-
-    @PostMapping("/role/addToUser")
-    fun saveRole(@RequestBody form: RoleToUserForm): ResponseEntity<SuccessResponse>{
-        userService.addRoleToUser(form.username, form.roleName)
-        return ResponseEntity.ok().body(SuccessResponse(message = "role '${form.roleName}' has been assigned to user ${form.username}"))
-
+        return ResponseEntity.ok().body(userService.saveRole(role))
     }
 
 
