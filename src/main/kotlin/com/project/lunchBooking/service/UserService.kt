@@ -10,24 +10,41 @@ import io.jsonwebtoken.SignatureAlgorithm
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.jdbc.core.*
+import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.core.userdetails.UserDetails
+import org.springframework.security.core.userdetails.UserDetailsService
+import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.client.HttpClientErrorException
 import java.util.*
 import javax.servlet.http.*
+import kotlin.collections.ArrayList
 
 @Service
 class UserService(
     private val userRepository: UserRepository,
     private val roleRepository: RoleRepository,
     @Autowired private val jdbc : JdbcTemplate = JdbcTemplate(),
-    private val passwordEncoder: BCryptPasswordEncoder = BCryptPasswordEncoder()
-) {
+    @Lazy private val passwordEncoder: PasswordEncoder
+
+) : UserDetailsService{
+
+    // load the user from DB first and then do verification (used by spring security)
+    // override the function in UserDetailService interface
+    override fun loadUserByUsername(username: String): UserDetails {
+        val user: User = userRepository.findByUsername(username) ?: throw UsernameNotFoundException("user not found in the database")
+        val authorities: MutableCollection<SimpleGrantedAuthority> = ArrayList<SimpleGrantedAuthority>()
+        user.roles.forEach { authorities.add(SimpleGrantedAuthority(it.name)) }
+        return org.springframework.security.core.userdetails.User(user.username, user.password, authorities)
+    }
 
     fun saveRole(role: Role): Role{
         if(role.id != -1){
@@ -67,7 +84,11 @@ class UserService(
 
         user.password = passwordEncoder.encode(user.password)
 
-        return userRepository.save(user)
+        userRepository.save(user)
+
+        addRoleToUser(user.username, "ROLE_ADMIN")
+
+        return user
     }
 
     fun saveUsers(users: List<User>) : List<User>{
@@ -103,30 +124,32 @@ class UserService(
         return null
     }
 
-    fun Login(user: User, response: HttpServletResponse): ResponseEntity<SuccessResponse> {
+//    fun Login(user: User, response: HttpServletResponse): ResponseEntity<SuccessResponse> {
+//
+//        val existingUser: User = userRepository.findByUsername(user.username)
+//            ?: throw IllegalArgumentException("Invalid username or email")
+//
+//        if(!passwordEncoder.matches(user.password, existingUser.password)){
+//            throw IllegalArgumentException("Invalid username or email")
+//        }
+//
+//        val jwt = Jwts.builder()
+//            .setIssuer(existingUser.id.toString())
+//            .setExpiration(Date(System.currentTimeMillis() + 1000 * 60 * 60))
+//            .signWith(SignatureAlgorithm.ES512, "userLogin").compact()
+//
+//        val cookie = Cookie("jwt", jwt)
+//
+//        // front-end cannot read it
+//        cookie.isHttpOnly = true
+//
+//        response.addCookie(cookie)
+//
+//        return ResponseEntity.ok(SuccessResponse(message = "You have successfully logged in to the system."))
+//
+//    }
 
-        val existingUser: User = userRepository.findByUsername(user.username)
-            ?: throw IllegalArgumentException("Invalid username or email")
 
-        if(!passwordEncoder.matches(user.password, existingUser.password)){
-            throw IllegalArgumentException("Invalid username or email")
-        }
-
-        val jwt = Jwts.builder()
-            .setIssuer(existingUser.id.toString())
-            .setExpiration(Date(System.currentTimeMillis() + 1000 * 60 * 60))
-            .signWith(SignatureAlgorithm.ES512, "userLogin").compact()
-
-        val cookie = Cookie("jwt", jwt)
-
-        // front-end cannot read it
-        cookie.isHttpOnly = true
-
-        response.addCookie(cookie)
-
-        return ResponseEntity.ok(SuccessResponse(message = "You have successfully logged in to the system."))
-
-    }
 
 
 }

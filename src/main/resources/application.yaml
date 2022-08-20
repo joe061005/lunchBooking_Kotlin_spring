@@ -3,15 +3,19 @@ spring:
     url: ${MySQL_URL}
     username: ${MySQL_USERNAME}
     password: ${MySQL_PASSWORD}
-
   jpa:
     show-sql: true
     hibernate:
       ddl-auto: update
     properties:
       hibernate.format_sql: true
+  security:
+    user:
+      name: ${security_username}
+      password: ${security_password}
 jwt:
   secret: ${SECRET_KEY}
+
 
 
 
