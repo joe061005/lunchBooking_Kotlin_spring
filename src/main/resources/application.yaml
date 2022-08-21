@@ -17,14 +17,3 @@ jwt:
   secret: ${SECRET_KEY}
 
 
-
-
-
-#  session:
-#    store-type: jdbc
-#    timeout: 30m
-#    jdbc:
-#      initialize-schema: always
-#      table-name: SPRING_SESSION
-
-

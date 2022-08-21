@@ -1,7 +1,9 @@
 package com.project.lunchBooking.filter
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
+import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.security.authentication.AuthenticationManager
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -14,9 +16,12 @@ import java.util.stream.Collectors
 import javax.servlet.FilterChain
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
+import kotlin.collections.HashMap
 
 class UserAuthenticationFilter(private val authManager: AuthenticationManager) : UsernamePasswordAuthenticationFilter(){
 
+    // call loadUserByUsername(username) in UserService first to get the UserDetails
+    // Then, do the verification
     override fun attemptAuthentication(request: HttpServletRequest, response: HttpServletResponse): Authentication {
         val username: String = request.getParameter("username")
         val password: String = request.getParameter("password")
@@ -32,24 +37,28 @@ class UserAuthenticationFilter(private val authManager: AuthenticationManager) :
         chain: FilterChain,
         authentication: Authentication
     ) {
+
         val user: User = authentication.principal as User
 
         // in production env, the key is stored in other places for security reasons
         val access_token: String = Jwts.builder()
             .setIssuer(user.username)
             .setExpiration(Date(System.currentTimeMillis() + 1000 * 60 * 30))
-            .signWith(SignatureAlgorithm.ES512, "userLogin")
+            .signWith(SignatureAlgorithm.HS512, "userLogin")
             .setSubject(request.requestURI.toString())
             .claim("roles", user.authorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))
             .compact()
         val refresh_token: String = Jwts.builder()
             .setIssuer(user.username)
             .setExpiration(Date(System.currentTimeMillis() + 1000 * 60 * 60))
-            .signWith(SignatureAlgorithm.ES512, "userLogin")
+            .signWith(SignatureAlgorithm.HS512, "userLogin")
             .setSubject(request.requestURI.toString())
             .compact()
-        response.setHeader("access_token", access_token)
-        response.setHeader("refresh_token", refresh_token)
+        val tokens: MutableMap<String, String> = HashMap<String, String>()
+        tokens["access_token"] = access_token
+        tokens["refresh_token"] = refresh_token
+        response.contentType = APPLICATION_JSON_VALUE
+        ObjectMapper().writeValue(response.outputStream, tokens)
 
     }
 }

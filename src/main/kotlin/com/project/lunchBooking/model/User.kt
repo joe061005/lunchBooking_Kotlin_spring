@@ -22,6 +22,6 @@ data class User(
     var verify: Boolean? = false,
 
     @ManyToMany(fetch = FetchType.EAGER)
-    var roles: MutableCollection<Role> = ArrayList<Role>()
+    var roles: MutableCollection<Role>? = ArrayList<Role>()
 
 )

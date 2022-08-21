@@ -3,6 +3,7 @@ package com.project.lunchBooking.security
 import com.project.lunchBooking.filter.UserAuthenticationFilter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
@@ -30,18 +31,24 @@ class SecurityConfig(
         return authenticationConfiguration.authenticationManager
     }
 
+    // use UserAuthenticationFilter to do user verification (endpoint: xx/login)
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
+        // set login endpoint
+        val userAuthenticationFilter: UserAuthenticationFilter = UserAuthenticationFilter(authManagerBuilder.orBuild)
+        userAuthenticationFilter.setFilterProcessesUrl("/api/v1/user/login")
 
         // prevent CSRF attack using cookie
         http.csrf().disable()
+
         // don't use cookie
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-        // allow public access
-        http.authorizeRequests().anyRequest().permitAll()
 
+        // use .permitAll() for public access
+        http.authorizeRequests().antMatchers("/api/v1/user/login/**").permitAll()
+        http.authorizeRequests().antMatchers(HttpMethod.POST, "/api/v1/role/**").hasAnyAuthority("ROLE_ADMIN")
+        http.authorizeRequests().anyRequest().authenticated()
         http.addFilter(UserAuthenticationFilter(authManagerBuilder.orBuild))
-
         return http.build()
 
     }
