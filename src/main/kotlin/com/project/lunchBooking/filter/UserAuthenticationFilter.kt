@@ -3,20 +3,23 @@ package com.project.lunchBooking.filter
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.security.authentication.AuthenticationManager
-
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
+import org.springframework.security.core.AuthenticationException
 import org.springframework.security.core.GrantedAuthority
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.User
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import java.time.LocalDateTime
 import java.util.*
 import java.util.stream.Collectors
 import javax.servlet.FilterChain
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
-import kotlin.collections.HashMap
+
 
 class UserAuthenticationFilter(private val authManager: AuthenticationManager) : UsernamePasswordAuthenticationFilter(){
 
@@ -60,5 +63,21 @@ class UserAuthenticationFilter(private val authManager: AuthenticationManager) :
         response.contentType = APPLICATION_JSON_VALUE
         ObjectMapper().writeValue(response.outputStream, tokens)
 
+    }
+
+    override fun unsuccessfulAuthentication(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        failed: AuthenticationException
+    ) {
+        SecurityContextHolder.clearContext()
+        response.status = HttpStatus.UNAUTHORIZED.value()
+        val error: MutableMap<String, String> = HashMap<String, String>()
+        error["timestamp"] = LocalDateTime.now().toString()
+        error["status"] = HttpStatus.UNAUTHORIZED.value().toString()
+        error["error"] = HttpStatus.UNAUTHORIZED.toString()
+        error["path"] = request.requestURI
+        response.contentType = APPLICATION_JSON_VALUE
+        ObjectMapper().writeValue(response.outputStream, error)
     }
 }

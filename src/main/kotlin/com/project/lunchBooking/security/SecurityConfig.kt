@@ -1,6 +1,7 @@
 package com.project.lunchBooking.security
 
 import com.project.lunchBooking.filter.UserAuthenticationFilter
+import com.project.lunchBooking.filter.UserAuthorizationFilter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
@@ -14,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 
 @Configuration
 @EnableWebSecurity
@@ -35,7 +37,7 @@ class SecurityConfig(
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         // set login endpoint
-        val userAuthenticationFilter: UserAuthenticationFilter = UserAuthenticationFilter(authManagerBuilder.orBuild)
+        val userAuthenticationFilter = UserAuthenticationFilter(authManagerBuilder.orBuild)
         userAuthenticationFilter.setFilterProcessesUrl("/api/v1/user/login")
 
         // prevent CSRF attack using cookie
@@ -48,7 +50,9 @@ class SecurityConfig(
         http.authorizeRequests().antMatchers("/api/v1/user/login/**").permitAll()
         http.authorizeRequests().antMatchers(HttpMethod.POST, "/api/v1/role/**").hasAnyAuthority("ROLE_ADMIN")
         http.authorizeRequests().anyRequest().authenticated()
-        http.addFilter(UserAuthenticationFilter(authManagerBuilder.orBuild))
+        // http.exceptionHandling().accessDeniedHandler()
+        http.addFilter(userAuthenticationFilter)
+        http.addFilterBefore(UserAuthorizationFilter(), UsernamePasswordAuthenticationFilter::class.java)
         return http.build()
 
     }
