@@ -2,6 +2,7 @@ package com.project.lunchBooking.security
 
 import com.project.lunchBooking.filter.UserAuthenticationFilter
 import com.project.lunchBooking.filter.UserAuthorizationFilter
+import com.project.lunchBooking.securityHandler.UserAuthenticationEntryPoint
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
@@ -11,11 +12,11 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
-import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+
 
 @Configuration
 @EnableWebSecurity
@@ -47,10 +48,10 @@ class SecurityConfig(
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
 
         // use .permitAll() for public access
-        http.authorizeRequests().antMatchers("/api/v1/user/login/**").permitAll()
+        http.authorizeRequests().antMatchers("/api/v1/user/login/**", "/api/v1/token/refresh/**").permitAll()
         http.authorizeRequests().antMatchers(HttpMethod.POST, "/api/v1/role/**").hasAnyAuthority("ROLE_ADMIN")
         http.authorizeRequests().anyRequest().authenticated()
-        // http.exceptionHandling().accessDeniedHandler()
+        http.exceptionHandling().authenticationEntryPoint(UserAuthenticationEntryPoint())
         http.addFilter(userAuthenticationFilter)
         http.addFilterBefore(UserAuthorizationFilter(), UsernamePasswordAuthenticationFilter::class.java)
         return http.build()

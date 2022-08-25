@@ -1,14 +1,9 @@
 package com.project.lunchBooking.controller
 
 
-import com.project.lunchBooking.errorHandler.ErrorResponse
-import com.project.lunchBooking.errorHandler.SuccessResponse
-import com.project.lunchBooking.model.Role
-import com.project.lunchBooking.model.RoleToUserForm
+
 import com.project.lunchBooking.model.User
-import com.project.lunchBooking.service.RoleService
 import com.project.lunchBooking.service.UserService
-import io.jsonwebtoken.Jwts
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -58,5 +53,6 @@ class UserController(
     fun deleteUser(@PathVariable id: Int): String {
         return userService.deleteUser(id)
     }
+
 
 }

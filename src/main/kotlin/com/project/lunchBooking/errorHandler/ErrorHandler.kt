@@ -20,5 +20,10 @@ class ErrorHandler {
         return ResponseEntity.badRequest().body(ErrorResponse(message = ex.localizedMessage))
     }
 
+    @ExceptionHandler(RuntimeException::class)
+    fun handleIllegalArgument(ex: RuntimeException): ResponseEntity<ErrorResponse>{
+        return ResponseEntity.badRequest().body(ErrorResponse(message = ex.localizedMessage))
+    }
+
 
 }

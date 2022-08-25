@@ -25,7 +25,7 @@ class UserAuthorizationFilter: OncePerRequestFilter() {
         filterChain: FilterChain
     ) {
 
-        if(request.servletPath.equals("/api/v1/user/login")){
+        if(request.servletPath.equals("/api/v1/user/login") || request.servletPath.equals("/api/v1/token/refresh")){
             filterChain.doFilter(request, response)
         }else{
             val authorizationHeader: String? = request.getHeader(AUTHORIZATION)
