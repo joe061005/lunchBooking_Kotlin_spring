@@ -25,6 +25,10 @@ class UserService(
 
 ) : UserDetailsService{
 
+    companion object{
+        val MAX_FAILED_ATTEMPTS = 3
+    }
+
     // load the user from DB first and then do verification (used by spring security)
     // override the function in UserDetailService interface
     override fun loadUserByUsername(username: String): UserDetails {
@@ -35,11 +39,12 @@ class UserService(
     }
 
     fun saveUser(user: User): User{
-        if(user.id != -1 || user.verify != false){
-            throw IllegalArgumentException("Id must be -1 and verify must be false")
+        if(user.id != -1 || user.verify != false || user.roles!!.isNotEmpty()  || user.accountNonLocked != true || user.failedAttempt != 0 || user.lockTime != null){
+            throw IllegalArgumentException("1. Id must be -1\n2. verify must be false\n3. roles list must be empty\n4. accountNonLocked must be true\n5. failedAttempt must be 0\n6. lockTime must be null")
         }
 
-        if(user.roles!!.isNotEmpty()){
+
+        if(user.accountNonLocked != true){
             throw IllegalArgumentException("roles list must be empty")
         }
 
@@ -112,6 +117,12 @@ class UserService(
             return userRepository.save(existingUser)
         }
         return null
+    }
+
+    fun increaseFailedAttempt(user: User){
+        val newFailedAttempts: Int = user.failedAttempt!! + 1
+        userRepository.updateFailedAttempt(newFailedAttempts, user.username)
+
     }
 
 }

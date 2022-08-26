@@ -3,6 +3,7 @@ package com.project.lunchBooking.security
 import com.project.lunchBooking.filter.UserAuthenticationFilter
 import com.project.lunchBooking.filter.UserAuthorizationFilter
 import com.project.lunchBooking.securityHandler.UserAuthenticationEntryPoint
+import com.project.lunchBooking.service.UserService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
@@ -21,8 +22,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 class SecurityConfig(
-    private val authManagerBuilder: AuthenticationManagerBuilder
+    private val authManagerBuilder: AuthenticationManagerBuilder,
+    private val userService: UserService
 ) {
+
 
     @Bean
     fun passwordEncoder(): PasswordEncoder {
@@ -38,7 +41,7 @@ class SecurityConfig(
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         // set login endpoint
-        val userAuthenticationFilter = UserAuthenticationFilter(authManagerBuilder.orBuild)
+        val userAuthenticationFilter = UserAuthenticationFilter(authManagerBuilder.orBuild, userService)
         userAuthenticationFilter.setFilterProcessesUrl("/api/v1/user/login")
 
         // prevent CSRF attack using cookie

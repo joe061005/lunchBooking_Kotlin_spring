@@ -1,8 +1,10 @@
 package com.project.lunchBooking.filter
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.project.lunchBooking.service.UserService
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.security.authentication.AuthenticationManager
@@ -21,7 +23,10 @@ import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 
-class UserAuthenticationFilter(private val authManager: AuthenticationManager) : UsernamePasswordAuthenticationFilter(){
+class UserAuthenticationFilter(
+    private val authManager: AuthenticationManager,
+    private val userService: UserService,
+) : UsernamePasswordAuthenticationFilter(){
 
     // call loadUserByUsername(username) in UserService first to get the UserDetails
     // Then, do the verification
@@ -70,9 +75,21 @@ class UserAuthenticationFilter(private val authManager: AuthenticationManager) :
         response: HttpServletResponse,
         failed: AuthenticationException
     ) {
+        val error: MutableMap<String, String> = HashMap<String, String>()
+
+        val username: String = request.getParameter("username")
+        val user: com.project.lunchBooking.model.User? = userService.getUserByUsername(username)
+
+        if(user != null){
+            if(user.accountNonLocked == true){
+                if(user.failedAttempt!! < UserService.MAX_FAILED_ATTEMPTS - 1){
+                    userService.increaseFailedAttempt(user)
+                }
+            }
+        }
+
         SecurityContextHolder.clearContext()
         response.status = HttpStatus.UNAUTHORIZED.value()
-        val error: MutableMap<String, String> = HashMap<String, String>()
         error["timestamp"] = LocalDateTime.now().toString()
         error["status"] = HttpStatus.UNAUTHORIZED.value().toString()
         error["error"] = HttpStatus.UNAUTHORIZED.toString()

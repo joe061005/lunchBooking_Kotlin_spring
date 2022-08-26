@@ -1,6 +1,8 @@
 package com.project.lunchBooking.model
 
+import java.util.*
 import javax.persistence.*
+import kotlin.collections.ArrayList
 
 @Entity
 data class User(
@@ -22,6 +24,17 @@ data class User(
     var verify: Boolean? = false,
 
     @ManyToMany(fetch = FetchType.EAGER)
-    var roles: MutableCollection<Role>? = ArrayList<Role>()
+    var roles: MutableCollection<Role>? = ArrayList<Role>(),
+
+    @Column(name = "account_non_locked")
+    var accountNonLocked: Boolean? = true,
+
+    @Column(name = "failed_attempt")
+    var failedAttempt: Int? = 0,
+
+    @Column(name = "lock_time")
+    var lockTime: Date? = null
+
+
 
 )
