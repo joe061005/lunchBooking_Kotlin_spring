@@ -2,6 +2,7 @@ package com.project.lunchBooking.errorHandler
 
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.authentication.LockedException as AccountLockedException
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -16,14 +17,16 @@ class ErrorHandler {
     }
 
     @ExceptionHandler(UsernameNotFoundException::class)
-    fun handleIllegalArgument(ex: UsernameNotFoundException): ResponseEntity<ErrorResponse>{
+    fun handleUsernameNotFound(ex: UsernameNotFoundException): ResponseEntity<ErrorResponse>{
         return ResponseEntity.badRequest().body(ErrorResponse(message = ex.localizedMessage))
     }
 
     @ExceptionHandler(RuntimeException::class)
-    fun handleIllegalArgument(ex: RuntimeException): ResponseEntity<ErrorResponse>{
+    fun handleRuntimeException(ex: RuntimeException): ResponseEntity<ErrorResponse>{
         return ResponseEntity.badRequest().body(ErrorResponse(message = ex.localizedMessage))
     }
+
+
 
 
 }
