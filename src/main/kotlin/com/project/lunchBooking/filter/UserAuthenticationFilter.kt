@@ -24,12 +24,13 @@ import java.util.stream.Collectors
 import javax.servlet.FilterChain
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
+import com.project.lunchBooking.model.User as appUser
 
 
 class UserAuthenticationFilter(
     private val authManager: AuthenticationManager,
     private val userService: UserService,
-) : UsernamePasswordAuthenticationFilter(){
+) : UsernamePasswordAuthenticationFilter() {
 
     // call loadUserByUsername(username) in UserService first to get the UserDetails
     // Then, do the verification
@@ -50,6 +51,8 @@ class UserAuthenticationFilter(
     ) {
 
         val user: User = authentication.principal as User
+
+        userService.updateFailedAttempt(user.username)
 
         // in production env, the key is stored in other places for security reasons
         val access_token: String = Jwts.builder()
@@ -81,25 +84,26 @@ class UserAuthenticationFilter(
         val error: MutableMap<String, String> = HashMap<String, String>()
 
         val username: String = request.getParameter("username")
-        val user: com.project.lunchBooking.model.User? = userService.getUserByUsername(username)
+        val user: appUser? = userService.getUserByUsername(username)
 
-        if(user != null){
-            if(user.accountNonLocked == true){
+        if (user != null) {
+            if (user.accountNonLocked == true) {
                 // add failedAttempt by 1 if it is 0 or 1
-                if(user.failedAttempt!! < UserService.MAX_FAILED_ATTEMPTS - 1){
+                if (user.failedAttempt!! < UserService.MAX_FAILED_ATTEMPTS - 1) {
                     userService.increaseFailedAttempt(user)
-                    error["message"] = "Wrong password"
+                    error["message"] = "Invalid username or password"
                 } else { // lock the account if failedAttempt is 2
                     userService.lock(user)
-                    error["message"] = "Your account has been locked due to 3 failed attempts. It will be unlocked after 15 minutes."
+                    error["message"] =
+                        "Your account has been locked due to 3 failed attempts. It will be unlocked after 15 minutes (${Date(user.lockTime!!.time + UserService.LOCK_TIME_DURATION)})."
                 }
-            }else if (user.accountNonLocked == false){
-                if(userService.unlock(user)){
-                    error["message"] = "Your account has been unlocked. Please try to login again."
-                }else {
-                    error["message"] = "Your account has been locked due to 3 failed attempts. It will be unlocked after 15 minutes."
-                }
+            } else if (user.accountNonLocked == false) {
+                // show error message if the account is locked
+                error["message"] =
+                    "Your account has been locked due to 3 failed attempts. It will be unlocked after 15 minutes (${Date(user.lockTime!!.time + UserService.LOCK_TIME_DURATION)})."
             }
+        }else {
+            error["message"] = "Invalid username or password"
         }
 
         SecurityContextHolder.clearContext()

@@ -32,11 +32,17 @@ class UserService(
         const val LOCK_TIME_DURATION = 15 * 60 * 1000 // 15 minutes
     }
 
-    // load the user from DB first and then do verification (used by spring security)
+    // load the user from DB first and then do authentication (used by spring security)
     // override the function in UserDetailService interface
     override fun loadUserByUsername(username: String): UserDetails {
-        val user: User =
+        var user: User =
             userRepository.findByUsername(username) ?: throw UsernameNotFoundException("user not found in the database")
+        if (user.accountNonLocked == false){
+            if(!unlock(user)){
+                return org.springframework.security.core.userdetails.User( null, null, null)
+            }
+        }
+
         val authorities: MutableCollection<SimpleGrantedAuthority> = ArrayList<SimpleGrantedAuthority>()
         user.roles!!.forEach { authorities.add(SimpleGrantedAuthority(it.name)) }
         return org.springframework.security.core.userdetails.User(user.username, user.password, authorities)
@@ -148,6 +154,13 @@ class UserService(
             return true
         }
         return false
+    }
+
+    fun updateFailedAttempt(username: String){
+        val user: User = userRepository.findByUsername(username)!!
+        if(user.failedAttempt!! > 0){
+            userRepository.updateFailedAttempt(0, username)
+        }
     }
 
 }
