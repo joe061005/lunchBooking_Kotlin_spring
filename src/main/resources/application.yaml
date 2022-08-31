@@ -13,7 +13,6 @@ spring:
     user:
       name: ${security_username}
       password: ${security_password}
-jwt:
-  secret: ${SECRET_KEY}
+
 
 

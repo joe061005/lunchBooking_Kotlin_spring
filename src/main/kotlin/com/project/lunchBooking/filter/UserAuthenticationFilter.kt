@@ -55,22 +55,27 @@ class UserAuthenticationFilter(
         userService.updateFailedAttempt(user.username)
 
         // in production env, the key is stored in other places for security reasons
+        val accessTokenExpiryTime: Long = System.currentTimeMillis() + 1000 * 60 * 30
+        val refreshTokenExpiryTime: Long = System.currentTimeMillis() + 1000 * 60 * 60
+
         val access_token: String = Jwts.builder()
             .setIssuer(user.username)
-            .setExpiration(Date(System.currentTimeMillis() + 1000 * 60 * 30))
+            .setExpiration(Date(accessTokenExpiryTime))
             .signWith(SignatureAlgorithm.HS512, "userLogin")
             .setSubject(request.requestURI.toString())
             .claim("roles", user.authorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))
             .compact()
         val refresh_token: String = Jwts.builder()
             .setIssuer(user.username)
-            .setExpiration(Date(System.currentTimeMillis() + 1000 * 60 * 60))
+            .setExpiration(Date(refreshTokenExpiryTime))
             .signWith(SignatureAlgorithm.HS512, "userLogin")
             .setSubject(request.requestURI.toString())
             .compact()
         val tokens: MutableMap<String, String> = HashMap<String, String>()
         tokens["access_token"] = access_token
         tokens["refresh_token"] = refresh_token
+        tokens["access_token_expiry_time"] = accessTokenExpiryTime.toString()
+        tokens["refresh_token_expiry_time"] = refreshTokenExpiryTime.toString()
         response.contentType = APPLICATION_JSON_VALUE
         ObjectMapper().writeValue(response.outputStream, tokens)
 
