@@ -4,11 +4,14 @@ import com.project.lunchBooking.model.Role
 import com.project.lunchBooking.model.User
 import com.project.lunchBooking.repo.RoleRepository
 import com.project.lunchBooking.repo.UserRepository
+import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.SignatureAlgorithm
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
 import org.springframework.jdbc.core.*
+import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
@@ -16,6 +19,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.password.PasswordEncoder
 import java.time.LocalDateTime
 import java.util.*
+import java.util.stream.Collectors
 import kotlin.collections.ArrayList
 
 @Service
@@ -23,7 +27,8 @@ class UserService(
     private val userRepository: UserRepository,
     private val roleRepository: RoleRepository,
     @Autowired private val jdbc: JdbcTemplate = JdbcTemplate(),
-    @Lazy private val passwordEncoder: PasswordEncoder
+    @Lazy private val passwordEncoder: PasswordEncoder,
+    private val emailSenderService: EmailSenderService
 
 ) : UserDetailsService {
 
@@ -50,7 +55,7 @@ class UserService(
 
     fun saveUser(user: User): User {
         if (user.id != -1 || user.verify != false || user.roles!!.isNotEmpty() || user.accountNonLocked != true || user.failedAttempt != 0 || user.lockTime != null) {
-            throw IllegalArgumentException("1. Id must be -1\n2. verify must be false\n3. roles list must be empty\n4. accountNonLocked must be true\n5. failedAttempt must be 0\n6. lockTime must be null")
+            throw IllegalArgumentException("1. Id must be -1 2. verify must be false 3. roles list must be empty 4. accountNonLocked must be true 5. failedAttempt must be 0 6. lockTime must be null")
         }
 
 
@@ -73,7 +78,18 @@ class UserService(
 
         user.roles!!.add(role)
 
-        return userRepository.save(user)
+        val newUser: User = userRepository.save(user)
+
+        val token: String = Jwts.builder()
+            .setIssuer(user.username)
+            .setExpiration(Date(System.currentTimeMillis() + 1000 * 60 * 10))
+            .signWith(SignatureAlgorithm.HS512, "${user.username}${System.currentTimeMillis()}")
+            .setSubject("email verification")
+            .compact()
+
+        emailSenderService.sendEmail(user.email, "Account Activation - Restaurant Booking Platform", "http://localhost:8080/api/v1/user/emailVerification/${token}", user.username)
+
+        return newUser
     }
 
     fun saveAdmin(user: User): User {

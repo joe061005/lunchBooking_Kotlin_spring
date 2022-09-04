@@ -51,7 +51,7 @@ class SecurityConfig(
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
 
         // use .permitAll() for public access
-        http.authorizeRequests().antMatchers("/api/v1/user/login/**", "/api/v1/token/refresh/**").permitAll()
+        http.authorizeRequests().antMatchers("/api/v1/user/login/**", "/api/v1/token/refresh/**", "/api/v1/user/addUser/**").permitAll()
         http.authorizeRequests().antMatchers(HttpMethod.POST, "/api/v1/role/**").hasAnyAuthority("ROLE_ADMIN")
         http.authorizeRequests().anyRequest().authenticated()
         http.exceptionHandling().authenticationEntryPoint(UserAuthenticationEntryPoint())
