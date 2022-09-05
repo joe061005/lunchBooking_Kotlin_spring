@@ -1,18 +1,24 @@
 package com.project.lunchBooking.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.project.lunchBooking.model.Role
 import com.project.lunchBooking.model.User
 import com.project.lunchBooking.repo.RoleRepository
 import com.project.lunchBooking.repo.UserRepository
+import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
+import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.jdbc.core.*
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
@@ -42,9 +48,9 @@ class UserService(
     override fun loadUserByUsername(username: String): UserDetails {
         var user: User =
             userRepository.findByUsername(username) ?: throw UsernameNotFoundException("user not found in the database")
-        if (user.accountNonLocked == false){
-            if(!unlock(user)){
-                return org.springframework.security.core.userdetails.User( null, null, null)
+        if (user.accountNonLocked == false) {
+            if (!unlock(user)) {
+                return org.springframework.security.core.userdetails.User(null, null, null)
             }
         }
 
@@ -80,14 +86,7 @@ class UserService(
 
         val newUser: User = userRepository.save(user)
 
-        val token: String = Jwts.builder()
-            .setIssuer(user.username)
-            .setExpiration(Date(System.currentTimeMillis() + 1000 * 60 * 10))
-            .signWith(SignatureAlgorithm.HS512, "${user.username}${System.currentTimeMillis()}")
-            .setSubject("email verification")
-            .compact()
-
-        emailSenderService.sendEmail(user.email, "Account Activation - Restaurant Booking Platform", "http://localhost:8080/api/v1/user/emailVerification/${token}", user.username)
+        sendVerificationEmail(newUser)
 
         return newUser
     }
@@ -162,7 +161,7 @@ class UserService(
         val lockTimeInMillis: Long = user.lockTime!!.time
         val currentTimeInMillis: Long = System.currentTimeMillis()
 
-        if(lockTimeInMillis + LOCK_TIME_DURATION < currentTimeInMillis){
+        if (lockTimeInMillis + LOCK_TIME_DURATION < currentTimeInMillis) {
             user.accountNonLocked = true
             user.lockTime = null
             user.failedAttempt = 0
@@ -172,11 +171,40 @@ class UserService(
         return false
     }
 
-    fun updateFailedAttempt(username: String){
+    fun updateFailedAttempt(username: String) {
         val user: User = userRepository.findByUsername(username)!!
-        if(user.failedAttempt!! > 0){
+        if (user.failedAttempt!! > 0) {
             userRepository.updateFailedAttempt(0, username)
         }
+    }
+
+    fun verifyEmail(token: String): Boolean {
+        try {
+            val body: Claims = Jwts.parser().setSigningKey("EmailVerification").parseClaimsJws(token).body
+            val username: String = body.issuer.toString()
+            val user: User = userRepository.findByUsername(username)?: throw IllegalArgumentException("user not found")
+            user.verify = true
+            userRepository.save(user)
+            return true
+        }catch(exception: Exception){
+            throw RuntimeException(exception.localizedMessage)
+        }
+    }
+
+    fun sendVerificationEmail(user: User){
+        val token: String = Jwts.builder()
+            .setIssuer(user.username)
+            .setExpiration(Date(System.currentTimeMillis() + 1000 * 60 * 10))
+            .signWith(SignatureAlgorithm.HS512, "EmailVerification")
+            .setSubject("email verification")
+            .compact()
+
+        emailSenderService.sendEmail(
+            user.email,
+            "Account Activation - Restaurant Booking Platform",
+            "http://localhost:8080/api/v1/user/emailVerification/${token}",
+            user.username
+        )
     }
 
 }

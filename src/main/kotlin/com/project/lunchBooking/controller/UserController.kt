@@ -3,6 +3,7 @@ package com.project.lunchBooking.controller
 
 
 import com.project.lunchBooking.model.User
+import com.project.lunchBooking.model.UsernameForm
 import com.project.lunchBooking.service.UserService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -52,6 +53,22 @@ class UserController(
     @DeleteMapping("/delete/{id}")
     fun deleteUser(@PathVariable id: Int): String {
         return userService.deleteUser(id)
+    }
+
+    @GetMapping("/emailVerification/{token}")
+    fun verifyEmail(@PathVariable token: String): ResponseEntity<String>{
+        val successful: Boolean = userService.verifyEmail(token)
+
+        return if (successful){
+            ResponseEntity.ok("The account has been verified")
+        }else{
+            ResponseEntity("Invalid token", HttpStatus.BAD_REQUEST)
+        }
+    }
+
+    @PostMapping("/resendEmail")
+    fun resendEmail(@RequestBody form: UsernameForm){
+
     }
 
 

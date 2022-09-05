@@ -31,11 +31,7 @@ class TokenController(
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             try {
                 val refresh_token: String = authorizationHeader.substring("Bearer ".length)
-                val body: Claims = Jwts.parser().setSigningKey("userLogin").parseClaimsJws(refresh_token).body
-
-                if (body["roles"] != null){
-                    throw RuntimeException("Invalid refresh token")
-                }
+                val body: Claims = Jwts.parser().setSigningKey("userRefresh").parseClaimsJws(refresh_token).body
 
                 val username: String = body.issuer.toString()
                 val user: User? = userService.getUserByUsername(username) ?: throw RuntimeException("Invalid token")
@@ -51,7 +47,7 @@ class TokenController(
                 val new_refresh_token: String = Jwts.builder()
                     .setIssuer(user.username)
                     .setExpiration(Date(refreshTokenExpiryTime))
-                    .signWith(SignatureAlgorithm.HS512, "userLogin")
+                    .signWith(SignatureAlgorithm.HS512, "userRefresh")
                     .setSubject(request.requestURI.toString())
                     .compact()
                 val tokens: MutableMap<String, String> = java.util.HashMap<String, String>()

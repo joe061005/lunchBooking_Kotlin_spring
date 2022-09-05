@@ -68,7 +68,7 @@ class UserAuthenticationFilter(
         val refresh_token: String = Jwts.builder()
             .setIssuer(user.username)
             .setExpiration(Date(refreshTokenExpiryTime))
-            .signWith(SignatureAlgorithm.HS512, "userLogin")
+            .signWith(SignatureAlgorithm.HS512, "userRefresh")
             .setSubject(request.requestURI.toString())
             .compact()
         val tokens: MutableMap<String, String> = HashMap<String, String>()
