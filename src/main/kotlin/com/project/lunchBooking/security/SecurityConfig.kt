@@ -17,6 +17,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.CorsConfigurationSource
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 
 
 @Configuration
@@ -36,6 +39,18 @@ class SecurityConfig(
     fun authenticationManager(authenticationConfiguration: AuthenticationConfiguration): AuthenticationManager {
         return authenticationConfiguration.authenticationManager
     }
+
+//    @Bean
+//    fun corsConfigurationSource(): CorsConfigurationSource {
+//        val config = CorsConfiguration()
+//        config.allowedOrigins = listOf("http://localhost:8080")
+//        config.allowedMethods = listOf("GET", "POST", "OPTIONS", "DELETE", "PUT", "PATCH")
+//        config.allowCredentials = true
+//        config.allowedHeaders = listOf("Authorization", "Cache-Control", "Content-Type")
+//        val source = UrlBasedCorsConfigurationSource()
+//        source.registerCorsConfiguration("/**", config)
+//        return source
+//    }
 
     // use UserAuthenticationFilter to do user verification (endpoint: xx/login)
     @Bean
@@ -57,7 +72,13 @@ class SecurityConfig(
         http.exceptionHandling().authenticationEntryPoint(UserAuthenticationEntryPoint())
         http.addFilter(userAuthenticationFilter)
         http.addFilterBefore(UserAuthorizationFilter(), UsernamePasswordAuthenticationFilter::class.java)
+
+        // exclude OPTIONS requests from authorization checks
+        http.cors()
+
         return http.build()
 
     }
+
+
 }
