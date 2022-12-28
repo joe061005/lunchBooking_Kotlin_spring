@@ -18,6 +18,7 @@ import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.User
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.web.bind.annotation.CrossOrigin
 import java.time.LocalDateTime
 import java.util.*
 import java.util.stream.Collectors
@@ -25,7 +26,6 @@ import javax.servlet.FilterChain
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 import com.project.lunchBooking.model.User as appUser
-
 
 class UserAuthenticationFilter(
     private val authManager: AuthenticationManager,

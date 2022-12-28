@@ -17,9 +17,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.security.web.session.SessionManagementFilter
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
+import java.util.*
 
 
 @Configuration
@@ -27,7 +29,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 class SecurityConfig(
     private val authManagerBuilder: AuthenticationManagerBuilder,
     private val userService: UserService
-) {
+){
 
 
     @Bean
@@ -40,17 +42,17 @@ class SecurityConfig(
         return authenticationConfiguration.authenticationManager
     }
 
-//    @Bean
-//    fun corsConfigurationSource(): CorsConfigurationSource {
-//        val config = CorsConfiguration()
-//        config.allowedOrigins = listOf("http://localhost:8080")
-//        config.allowedMethods = listOf("GET", "POST", "OPTIONS", "DELETE", "PUT", "PATCH")
-//        config.allowCredentials = true
-//        config.allowedHeaders = listOf("Authorization", "Cache-Control", "Content-Type")
-//        val source = UrlBasedCorsConfigurationSource()
-//        source.registerCorsConfiguration("/**", config)
-//        return source
-//    }
+    @Bean
+    fun corsConfigurationSource(): CorsConfigurationSource {
+        val config = CorsConfiguration()
+        config.allowedOrigins = listOf("http://localhost:4200")
+        config.allowedMethods = listOf("GET", "POST", "OPTIONS", "DELETE", "PUT", "PATCH")
+        config.allowCredentials = true
+        config.allowedHeaders = listOf("*")
+        val source = UrlBasedCorsConfigurationSource()
+        source.registerCorsConfiguration("/**", config)
+        return source
+    }
 
     // use UserAuthenticationFilter to do user verification (endpoint: xx/login)
     @Bean
@@ -65,6 +67,9 @@ class SecurityConfig(
         // don't use cookie
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
 
+        // exclude OPTIONS requests from authorization checks
+        http.cors()
+
         // use .permitAll() for public access
         http.authorizeRequests().antMatchers("/api/v1/user/login/**", "/api/v1/token/refresh/**", "/api/v1/user/addUser/**", "/api/v1/user/emailVerification/**").permitAll()
         http.authorizeRequests().antMatchers(HttpMethod.POST, "/api/v1/role/**").hasAnyAuthority("ROLE_ADMIN")
@@ -72,9 +77,6 @@ class SecurityConfig(
         http.exceptionHandling().authenticationEntryPoint(UserAuthenticationEntryPoint())
         http.addFilter(userAuthenticationFilter)
         http.addFilterBefore(UserAuthorizationFilter(), UsernamePasswordAuthenticationFilter::class.java)
-
-        // exclude OPTIONS requests from authorization checks
-        http.cors()
 
         return http.build()
 
